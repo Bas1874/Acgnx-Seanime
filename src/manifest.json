@@ -1,0 +1,26 @@
+{
+    "id": "Acgnx",
+    "name": "Acgnx",
+    "version": "1.0.0",
+    "manifestURI": "",
+    "language": "typescript",
+    "type": "anime-torrent-provider",
+    "description": "Displays voice actors for characters and their work.",
+    "author": "bas1874",
+    "icon": "https://raw.githubusercontent.com/Bas1874/Acgnx-Seanime/refs/heads/main/src/icon.png",
+    "website": "https://github.com/Bas1874/Acgnx-Seanime",
+    "lang": "Chinese",
+    "payloadURI": "https://raw.githubusercontent.com/Bas1874/Acgnx-Seanime/refs/heads/main/src/Acgnx.ts",
+    "plugin": {
+        "version": "1",
+        "permissions": {
+            "scopes": [
+                "anilist",
+				"database",
+				"playback",
+                "storage" 
+            ]
+        }
+    },
+    "isDevelopment": false
+}
