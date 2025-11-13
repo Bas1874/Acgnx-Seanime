@@ -65,35 +65,68 @@ class Provider {
         
         return items.map(itemXml => {
             try {
-                const title = this.getTagContent(itemXml, 'title')
+                // Get the raw title and clean it of any stray HTML tags.
+                let title = this.getTagContent(itemXml, 'title');
+                title = title.replace(/<[^>]*>/g, '').trim();
+
                 const link = this.getTagContent(itemXml, 'link')
                 const pubDate = this.getTagContent(itemXml, 'pubDate')
-                const descriptionHtml = this.getTagContent(itemXml, 'description')
+                const description = this.getTagContent(itemXml, 'description');
                 
                 const magnetMatch = /<enclosure url="(magnet:[^"]+)"/.exec(itemXml)
                 const magnetLink = magnetMatch ? magnetMatch[1] : ''
 
-                // Description format: <a href=...>...</a> | 467.5GB | 季度全集 | HASH
-                const descriptionParts = descriptionHtml.split('|')
-                const formattedSize = descriptionParts.length > 1 ? descriptionParts[1].trim() : "0"
-                const infoHash = descriptionParts.length > 3 ? descriptionParts[3].trim() : (this.getHashFromMagnet(magnetLink) || "")
+                // --- FIX: Robustly parse data from the description tag ---
+                const cleanedDescription = description.replace(/<[^>]*>/g, '').trim();
+                const descriptionParts = cleanedDescription.split('|');
+
+                // Find the file size using a regex pattern, not a fixed index.
+                let formattedSize = "0 MB";
+                for (const part of descriptionParts) {
+                    if (/\d+(\.\d+)?\s*(KB|MB|GB|TB)/i.test(part.trim())) {
+                        formattedSize = part.trim();
+                        break;
+                    }
+                }
+
+                // Get the info hash from the magnet link or find it in the description.
+                let infoHash = this.getHashFromMagnet(magnetLink) || "";
+                if (!infoHash) {
+                    for (const part of descriptionParts) {
+                        const trimmedPart = part.trim();
+                        if (trimmedPart.length === 40 && /^[a-f0-9]+$/i.test(trimmedPart)) {
+                            infoHash = trimmedPart;
+                            break;
+                        }
+                    }
+                }
+                // --- END FIX ---
+
+                const metadata = $habari.parse(title);
+                let episodeNumber = -1;
+                if (metadata.episode_number && metadata.episode_number.length > 0) {
+                    const parsedEp = parseInt(metadata.episode_number[0]);
+                    if (!isNaN(parsedEp)) {
+                        episodeNumber = parsedEp;
+                    }
+                }
 
                 return {
                     name: title,
                     date: new Date(pubDate).toISOString(),
                     size: this.parseSizeToBytes(formattedSize),
                     formattedSize: formattedSize,
-                    seeders: 0, // Not available in RSS
-                    leechers: 0, // Not available in RSS
-                    downloadCount: 0, // Not available in RSS
+                    seeders: -1,
+                    leechers: -1,
+                    downloadCount: 0,
                     link: link,
-                    downloadUrl: "", // No direct download URL
+                    downloadUrl: "",
                     magnetLink: magnetLink,
                     infoHash: infoHash.toLowerCase(),
-                    resolution: "", // Let Seanime parse it
-                    isBatch: undefined, // Let Seanime parse it
-                    episodeNumber: -1, // Let Seanime parse it
-                    releaseGroup: "", // Let Seanime parse it
+                    resolution: metadata.video_resolution || "",
+                    isBatch: (metadata.episode_number?.length ?? 0) > 1,
+                    episodeNumber: episodeNumber,
+                    releaseGroup: metadata.release_group || "",
                     isBestRelease: false,
                     confirmed: false,
                 }
@@ -101,7 +134,7 @@ class Provider {
                 console.error("Failed to parse an item from ACGNX RSS:", e)
                 return null
             }
-        }).filter((t): t is AnimeTorrent => t !== null) // Filter out any nulls from parsing errors
+        }).filter((t): t is AnimeTorrent => t !== null)
     }
     
     // Helper to extract content from a CDATA-wrapped tag.
@@ -109,7 +142,6 @@ class Provider {
         const match = new RegExp(`<${tagName}><!\\[CDATA\\[(.*?)]]></${tagName}>`, 's').exec(xml)
         if (match && match[1]) return match[1]
         
-        // Fallback for non-CDATA tags like <link> and <pubDate>
         const fallbackMatch = new RegExp(`<${tagName}>(.*?)</${tagName}>`).exec(xml)
         return fallbackMatch ? fallbackMatch[1] : ''
     }
@@ -127,7 +159,7 @@ class Provider {
         let value = parseFloat(sizeStr.replace(/[^0-9.]/g, ''))
         
         if (isNaN(value)) {
-            value = 0
+            return 0
         }
 
         let bytes = 0
@@ -141,7 +173,6 @@ class Provider {
             bytes = value
         }
         
-        // FIX: Round the final value to the nearest integer to match the expected 'int64' type.
         return Math.round(bytes)
     }
 }
