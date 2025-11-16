@@ -9,7 +9,7 @@
     "author": "bas1874",
     "icon": "https://raw.githubusercontent.com/Bas1874/Acgnx-Seanime/refs/heads/main/src/icon.png",
     "website": "https://github.com/Bas1874/Acgnx-Seanime",
-    "lang": "Chinese",
+    "lang": "zh",
     "payloadURI": "https://raw.githubusercontent.com/Bas1874/Acgnx-Seanime/refs/heads/main/src/Acgnx.ts",
     "plugin": {
         "version": "1",
