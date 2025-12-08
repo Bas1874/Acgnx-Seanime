@@ -60,7 +60,6 @@ class Provider {
   // Parses the raw XML string to extract torrent items.
   private parseTorrentsFromXml(xml: string): AnimeTorrent[] {
     const items = xml.split("<item>");
-    items.shift(); // Remove the channel header part
 
     return items
       .map((itemXml) => {
