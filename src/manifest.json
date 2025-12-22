@@ -14,12 +14,7 @@
     "plugin": {
         "version": "1",
         "permissions": {
-            "scopes": [
-                "anilist",
-				"database",
-				"playback",
-                "storage" 
-            ]
+            "scopes": []
         }
     },
     "isDevelopment": false
